@@ -1709,7 +1709,7 @@ const SymbolCommand& Binary::symbol_command(void) const {
 // DynamicSymbolCommand command
 // ++++++++++++++++++++++++++++
 bool Binary::has_dynamic_symbol_command(void) const {
-  return this->has_command<SymbolCommand>();
+  return this->has_command<DynamicSymbolCommand>();
 }
 
 DynamicSymbolCommand& Binary::dynamic_symbol_command(void) {
@@ -1805,6 +1805,21 @@ EncryptionInfo& Binary::encryption_info(void) {
 
 const EncryptionInfo& Binary::encryption_info(void) const {
   return this->command<EncryptionInfo>();
+}
+
+
+// BuildVersion command
+// ++++++++++++++++++++
+bool Binary::has_build_version(void) const {
+  return this->has_command<BuildVersion>();
+}
+
+BuildVersion& Binary::build_version(void) {
+  return this->command<BuildVersion>();
+}
+
+const BuildVersion& Binary::build_version(void) const {
+  return this->command<BuildVersion>();
 }
 
 

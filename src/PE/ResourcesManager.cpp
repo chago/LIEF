@@ -343,7 +343,20 @@ std::string ResourcesManager::manifest(void) const {
       [] (const ResourceNode& node) {
         return static_cast<RESOURCE_TYPES>(node.id()) == RESOURCE_TYPES::MANIFEST;
       });
-  const ResourceData* manifest_node = dynamic_cast<ResourceData*>(&((*it_manifest).childs()[0].childs()[0]));
+
+  // First level of child nodes
+  it_childs childs_l1 = it_manifest->childs();
+  if (childs_l1.size() < 1) {
+    throw not_found("Manifest corrupted");
+  }
+
+  it_childs childs_l2 = childs_l1[0].childs();
+
+  if (childs_l2.size() < 1) {
+    throw not_found("Manifest corrupted");
+  }
+
+  const ResourceData* manifest_node = dynamic_cast<ResourceData*>(&childs_l2[0]);
   const std::vector<uint8_t>& content = manifest_node->content();
   return std::string{std::begin(content), std::end(content)};
 }
@@ -396,7 +409,19 @@ ResourceVersion ResourcesManager::version(void) const {
         return static_cast<RESOURCE_TYPES>(node.id()) == RESOURCE_TYPES::VERSION;
       });
 
-  const ResourceData* version_node = dynamic_cast<ResourceData*>(&((*it_version).childs()[0].childs()[0]));
+  // First level of child nodes
+  it_childs childs_l1 = it_version->childs();
+  if (childs_l1.size() < 1) {
+    throw not_found("Resource version corrupted");
+  }
+
+  it_childs childs_l2 = childs_l1[0].childs();
+
+  if (childs_l2.size() < 1) {
+    throw not_found("Resource version corrupted");
+  }
+
+  const ResourceData* version_node = dynamic_cast<ResourceData*>(&childs_l2[0]);
   const std::vector<uint8_t>& content = version_node->content();
   VectorStream stream{content};
   ResourceVersion version;
@@ -589,6 +614,8 @@ ResourceStringFileInfo ResourcesManager::get_string_file_info(const VectorStream
     // Parse 'String'
     // ==============
     while (stream.pos() < end_offset) {
+      const size_t string_offset = stream.pos();
+
       const uint16_t string_length = stream.read<uint16_t>();
       VLOG(VDEBUG) << "Length of the 'string' struct: 0x" << std::hex << string_length;
 
@@ -602,9 +629,19 @@ ResourceStringFileInfo ResourcesManager::get_string_file_info(const VectorStream
       VLOG(VDEBUG) << "Key: " << u16tou8(key);
       stream.align(sizeof(uint32_t));
 
-      std::u16string value = stream.read_u16string();
-      VLOG(VDEBUG) << "Value: " << u16tou8(value);
+      std::u16string value;
+      if (string_value_length > 0 && stream.pos() < string_offset + string_length) {
+        value = stream.read_u16string();
+        VLOG(VDEBUG) << "Value: " << u16tou8(value);
+      } else {
+        VLOG(VDEBUG) << "Value: (empty)";
+      }
 
+      const size_t expected_end = string_offset + string_length;
+
+      if (stream.pos() < expected_end && expected_end < end_offset) {
+        stream.setpos(expected_end);
+      }
       stream.align(sizeof(uint32_t));
       lang_code_item.items_.emplace(key, value);
     }
@@ -765,8 +802,12 @@ std::vector<ResourceIcon> ResourcesManager::icons(void) const {
           LOG(ERROR) << "Unable to find the icon associated with id: " << std::to_string(id);
           continue;
         }
-        // TODO: add checks
-        const std::vector<uint8_t>& pixels = dynamic_cast<const ResourceData*>(&(it_icon_dir->childs()[0]))->content();
+        it_childs icons_childs = it_icon_dir->childs();
+        if (icons_childs.size() < 1) {
+          LOG(ERROR) << "Resources nodes loooks corrupted";
+          continue;
+        }
+        const std::vector<uint8_t>& pixels = dynamic_cast<const ResourceData*>(&icons_childs[0])->content();
         icon.pixels_ = pixels;
 
         icons.push_back(icon);
@@ -809,7 +850,20 @@ void ResourcesManager::add_icon(const ResourceIcon& icon) {
   }
 
   // Add to the GROUP
-  ResourceData* icon_group_node = dynamic_cast<ResourceData*>(&((*it_grp_icon).childs()[0].childs()[0]));
+
+  // First level of child nodes
+  it_childs childs_l1 = it_icon->childs();
+  if (childs_l1.size() < 1) {
+    throw not_found("Icon corrupted");
+  }
+
+  it_childs childs_l2 = childs_l1[0].childs();
+
+  if (childs_l2.size() < 1) {
+    throw not_found("Icon version corrupted");
+  }
+
+  ResourceData* icon_group_node = dynamic_cast<ResourceData*>(&childs_l2[0]);
   std::vector<uint8_t> icon_group_content = icon_group_node->content();
 
   pe_resource_icon_dir* group_icon_header = reinterpret_cast<pe_resource_icon_dir*>(icon_group_content.data());

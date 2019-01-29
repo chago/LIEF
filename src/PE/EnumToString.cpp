@@ -54,13 +54,14 @@ const char* to_string(DATA_DIRECTORY e) {
 
 
 const char* to_string(MACHINE_TYPES e) {
-  CONST_MAP(MACHINE_TYPES, const char*, 25) enumStrings {
+  CONST_MAP(MACHINE_TYPES, const char*, 26) enumStrings {
     { MACHINE_TYPES::MT_Invalid,                   "INVALID" },
     { MACHINE_TYPES::IMAGE_FILE_MACHINE_UNKNOWN,   "UNKNOWN" },
     { MACHINE_TYPES::IMAGE_FILE_MACHINE_AM33,      "AM33" },
     { MACHINE_TYPES::IMAGE_FILE_MACHINE_AMD64,     "AMD64" },
     { MACHINE_TYPES::IMAGE_FILE_MACHINE_ARM,       "ARM" },
     { MACHINE_TYPES::IMAGE_FILE_MACHINE_ARMNT,     "ARMNT" },
+    { MACHINE_TYPES::IMAGE_FILE_MACHINE_ARM64,     "ARM64" },
     { MACHINE_TYPES::IMAGE_FILE_MACHINE_EBC,       "EBC" },
     { MACHINE_TYPES::IMAGE_FILE_MACHINE_I386,      "I386" },
     { MACHINE_TYPES::IMAGE_FILE_MACHINE_IA64,      "IA64" },
@@ -385,7 +386,7 @@ const char* to_string(RELOCATIONS_BASE_TYPES e) {
 
 
 const char* to_string(DEBUG_TYPES e) {
-  CONST_MAP(DEBUG_TYPES, const char*, 16) enumStrings {
+  CONST_MAP(DEBUG_TYPES, const char*, 17) enumStrings {
     { DEBUG_TYPES::IMAGE_DEBUG_TYPE_UNKNOWN,       "UNKNOWN"    },
     { DEBUG_TYPES::IMAGE_DEBUG_TYPE_COFF,          "COFF"       },
     { DEBUG_TYPES::IMAGE_DEBUG_TYPE_CODEVIEW,      "CODEVIEW"   },
@@ -396,6 +397,7 @@ const char* to_string(DEBUG_TYPES e) {
     { DEBUG_TYPES::IMAGE_DEBUG_TYPE_OMAP_TO_SRC,   "SRC"        },
     { DEBUG_TYPES::IMAGE_DEBUG_TYPE_OMAP_FROM_SRC, "SRC"        },
     { DEBUG_TYPES::IMAGE_DEBUG_TYPE_BORLAND,       "BORLAND"    },
+    { DEBUG_TYPES::IMAGE_DEBUG_TYPE_RESERVED10,    "RESERVED"   },
     { DEBUG_TYPES::IMAGE_DEBUG_TYPE_CLSID,         "CLSID"      },
     { DEBUG_TYPES::IMAGE_DEBUG_TYPE_VC_FEATURE,    "VC_FEATURE" },
     { DEBUG_TYPES::IMAGE_DEBUG_TYPE_POGO,          "POGO"       },
@@ -1144,6 +1146,15 @@ const char* to_string(CODE_VIEW_SIGNATURES e) {
   return it == enumStrings.end() ? to_string(CODE_VIEW_SIGNATURES::CVS_UNKNOWN) : it->second;
 }
 
+const char* to_string(POGO_SIGNATURES e) {
+  CONST_MAP(POGO_SIGNATURES, const char*, 3) enumStrings {
+    { POGO_SIGNATURES::POGO_UNKNOWN, "UNKNOWN" },
+    { POGO_SIGNATURES::POGO_LCTG,    "LCTG"    },
+    { POGO_SIGNATURES::POGO_PGI,     "PGI"     },
+  };
+  auto   it  = enumStrings.find(e);
+  return it == enumStrings.end() ? to_string(POGO_SIGNATURES::POGO_UNKNOWN) : it->second;
+}
 
 
 } // namespace PE

@@ -28,6 +28,8 @@ class Symbol;
 class ExportEntry;
 class RichEntry;
 class RelocationEntry;
+class Debug;
+class PogoEntry;
 
 class Import;
 class ImportEntry;
@@ -64,6 +66,14 @@ using it_const_import_entries   = const_ref_iterator<const import_entries_t&>;
 using export_entries_t          = std::vector<ExportEntry>;
 using it_export_entries         = ref_iterator<export_entries_t&>;
 using it_const_export_entries   = const_ref_iterator<const export_entries_t&>;
+
+using debug_entries_t           = std::vector<Debug>;
+using it_debug_entries          = ref_iterator<debug_entries_t&>;
+using it_const_debug_entries    = const_ref_iterator<const debug_entries_t&>;
+
+using pogo_entries_t            = std::vector<PogoEntry>;
+using it_pogo_entries           = ref_iterator<pogo_entries_t&>;
+using it_const_pogo_entries     = const_ref_iterator<const pogo_entries_t&>;
 
 using symbols_t                 = std::vector<Symbol>;
 using it_symbols                = ref_iterator<symbols_t&>;

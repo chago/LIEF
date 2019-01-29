@@ -91,6 +91,8 @@ LIEF_PE_FORWARD(LoadConfigurationV4)
 LIEF_PE_FORWARD(LoadConfigurationV5)
 LIEF_PE_FORWARD(LoadConfigurationV6)
 LIEF_PE_FORWARD(LoadConfigurationV7)
+LIEF_PE_FORWARD(Pogo)
+LIEF_PE_FORWARD(PogoEntry)
 
 // ELF
 // ==================================
@@ -149,6 +151,8 @@ LIEF_MACHO_FORWARD(SegmentSplitInfo)
 LIEF_MACHO_FORWARD(SubFramework)
 LIEF_MACHO_FORWARD(DyldEnvironment)
 LIEF_MACHO_FORWARD(EncryptionInfo)
+LIEF_MACHO_FORWARD(BuildVersion)
+LIEF_MACHO_FORWARD(BuildToolVersion)
 
 // OAT
 // ===============================
@@ -380,6 +384,12 @@ class LIEF_API Visitor {
   //! Method to visit a LIEF::PE::CodeIntegrity
   LIEF_PE_VISITABLE(CodeIntegrity)
 
+  //! Method to visit a LIEF::PE::Pogo
+  LIEF_PE_VISITABLE(Pogo)
+
+  //! Method to visit a LIEF::PE::PogoEntry
+  LIEF_PE_VISITABLE(PogoEntry)
+
   // MachO part
   // ==========
   //! Method to visit a LIEF::MachO::Binary
@@ -468,6 +478,12 @@ class LIEF_API Visitor {
 
   //! @brief Method to visit a LIEF::MachO::DyldEnvironment
   LIEF_MACHO_VISITABLE(EncryptionInfo)
+
+  //! @brief Method to visit a LIEF::MachO:BuildVersion:
+  LIEF_MACHO_VISITABLE(BuildVersion)
+
+  //! @brief Method to visit a LIEF::MachO:BuildToolVersion:
+  LIEF_MACHO_VISITABLE(BuildToolVersion)
 
   // OAT part
   // ========

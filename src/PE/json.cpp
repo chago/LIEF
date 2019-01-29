@@ -108,9 +108,13 @@ void JsonVisitor::visit(const Binary& binary) {
 
   // Debug
   if (binary.has_debug()) {
-    JsonVisitor visitor;
-    visitor(binary.debug());
-    this->node_["debug"] = visitor.get();
+    std::vector<json> debug_entries;
+    for (const Debug& debug : binary.debug()) {
+      JsonVisitor visitor;
+      visitor(debug);
+      debug_entries.emplace_back(visitor.get());
+    }
+    this->node_["debug"] = debug_entries;
   }
 
   // Imports
@@ -366,6 +370,13 @@ void JsonVisitor::visit(const Debug& debug) {
     const CodeView& codeview = debug.code_view();
     codeview.accept(codeview_visitor);
     this->node_["code_view"] = codeview_visitor.get();
+  }
+
+  if (debug.has_pogo()) {
+    JsonVisitor pogo_visitor;
+    const Pogo& pogo = debug.pogo();
+    pogo.accept(pogo_visitor);
+    this->node_["pogo"] = pogo_visitor.get();
   }
 }
 
@@ -767,6 +778,24 @@ void JsonVisitor::visit(const LoadConfigurationV7& config) {
   this->node_["reserved3"]                = config.reserved3();
   this->node_["addressof_unicode_string"] = config.addressof_unicode_string();
   this->visit(static_cast<const LoadConfigurationV6&>(config));
+}
+
+
+void JsonVisitor::visit(const Pogo& pogo) {
+  this->node_["signature"] = to_string(pogo.signature());
+
+  std::vector<json> entries;
+  for (const PogoEntry& entry : pogo.entries()) {
+    JsonVisitor v;
+    v(entry);
+    entries.emplace_back(v.get());
+  }
+}
+
+void JsonVisitor::visit(const PogoEntry& entry) {
+  this->node_["name"]      = entry.name();
+  this->node_["start_rva"] = entry.start_rva();
+  this->node_["size"]      = entry.size();
 }
 
 

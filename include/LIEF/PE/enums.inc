@@ -266,6 +266,7 @@ enum _LIEF_EN(DEBUG_TYPES) {
   _LIEF_EI(IMAGE_DEBUG_TYPE_OMAP_TO_SRC)   = 7, ///< The mapping from an RVA in image to an RVA in source image.
   _LIEF_EI(IMAGE_DEBUG_TYPE_OMAP_FROM_SRC) = 8, ///< The mapping from an RVA in source image to an RVA in image.
   _LIEF_EI(IMAGE_DEBUG_TYPE_BORLAND)       = 9, ///< Reserved for Borland.
+  _LIEF_EI(IMAGE_DEBUG_TYPE_RESERVED10)    = 10, ///< Reserved for future use.
   _LIEF_EI(IMAGE_DEBUG_TYPE_CLSID)         = 11,
   _LIEF_EI(IMAGE_DEBUG_TYPE_VC_FEATURE)    = 12,
   _LIEF_EI(IMAGE_DEBUG_TYPE_POGO)          = 13,
@@ -283,6 +284,12 @@ enum _LIEF_EN(CODE_VIEW_SIGNATURES) {
   _LIEF_EI(CVS_PDB_20) = 0x3031424e, // NB10
   _LIEF_EI(CVS_CV_50)  = 0x3131424e, // NB11
   _LIEF_EI(CVS_CV_41)  = 0x3930424e, // NB09
+};
+
+enum _LIEF_EN(POGO_SIGNATURES) {
+  _LIEF_EI(POGO_UNKNOWN) = 0,
+  _LIEF_EI(POGO_LCTG)    = 0x4C544347,  // LCTG
+  _LIEF_EI(POGO_PGI)     = 0x50474900 , // PGI\0
 };
 
 enum _LIEF_EN(ImportType) {

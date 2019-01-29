@@ -435,10 +435,19 @@ void create<Binary>(py::module& m) {
         "symbol_name"_a,
         py::return_value_policy::reference)
 
+    .def("get_strings",
+        static_cast<Binary::string_list_t (Binary::*)(const size_t) const>(&Binary::strings),
+        "Return list of strings used in the current ELF file with a minimal size given in first parameter (Default: 5)\n"
+        "It looks for strings in the ``.roadata`` section",
+        "min_size"_a = 5,
+        py::return_value_policy::move)
+
     .def_property_readonly("strings",
-        &Binary::strings,
+        [] (const Binary& bin) {
+          return bin.strings();
+        },
         "Return list of strings used in the current ELF file.\n"
-        "Basically we look for string in the ``.roadata`` section",
+        "Basically we look for strings in the ``.roadata`` section",
         py::return_value_policy::move)
 
     .def("remove_static_symbol",
@@ -488,6 +497,20 @@ void create<Binary>(py::module& m) {
     .def_property_readonly("dtor_functions",
         &Binary::dtor_functions,
         "Destuctor functions that are called the main execution")
+
+    .def_property_readonly("eof_offset",
+        &Binary::eof_offset,
+        "Last offset that is used by the ELF format. Data after this offset are "
+        "considered as overlay data")
+
+    .def_property_readonly("has_overlay",
+        &Binary::has_overlay,
+        "True if data are appended to the end of the binary")
+
+    .def_property("overlay",
+        static_cast<getter_t<const Binary::overlay_t&>>(&Binary::overlay),
+        static_cast<setter_t<Binary::overlay_t>>(&Binary::overlay),
+        "Overlay data that are not a part of the ELF format")
 
 
 

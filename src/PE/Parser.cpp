@@ -565,28 +565,43 @@ void Parser::parse_debug(void) {
 
   uint32_t debugRVA    = this->binary_->data_directory(DATA_DIRECTORY::DEBUG).RVA();
   uint32_t debugoffset = this->binary_->rva_to_offset(debugRVA);
-  //uint32_t debugsize   = this->binary_->dataDirectories_[DATA_DIRECTORY::DEBUG]->size();
+  uint32_t debugsize   = this->binary_->data_directory(DATA_DIRECTORY::DEBUG).size();
 
-  const pe_debug& debug_struct = this->stream_->peek<pe_debug>(debugoffset);
+  for (size_t i = 0; (i + 1) * sizeof(pe_debug) <= debugsize; i++) {
 
-  this->binary_->debug_ = &debug_struct;
+    const pe_debug& debug_struct = this->stream_->peek<pe_debug>(debugoffset + i * sizeof(pe_debug));
+    this->binary_->debug_.push_back(&debug_struct);
 
-  DEBUG_TYPES type = this->binary_->debug().type();
+    DEBUG_TYPES type = this->binary_->debug().back().type();
 
-  switch (type) {
-    case DEBUG_TYPES::IMAGE_DEBUG_TYPE_CODEVIEW:
-      {
-        this->parse_debug_code_view();
-      }
-    default:
-      {
-      }
+    switch (type) {
+      case DEBUG_TYPES::IMAGE_DEBUG_TYPE_CODEVIEW:
+        {
+          this->parse_debug_code_view(this->binary_->debug().back());
+          break;
+        }
+
+      case DEBUG_TYPES::IMAGE_DEBUG_TYPE_POGO:
+        {
+          this->parse_debug_pogo(this->binary_->debug().back());
+          break;
+        }
+
+      case DEBUG_TYPES::IMAGE_DEBUG_TYPE_REPRO:
+        {
+          this->binary_->is_reproducible_build_ = true;
+          break;
+        }
+
+      default:
+        {}
+    }
   }
 }
 
-void Parser::parse_debug_code_view() {
+void Parser::parse_debug_code_view(Debug& debug_info) {
   VLOG(VDEBUG) << "Parsing Debug Code View";
-  Debug& debug_info = this->binary_->debug();
+  //Debug& debug_info = this->binary_->debug();
 
   const uint32_t debug_off = debug_info.pointerto_rawdata();
   if (not this->stream_->can_read<uint32_t>(debug_off)) {
@@ -623,6 +638,52 @@ void Parser::parse_debug_code_view() {
 
 }
 
+void Parser::parse_debug_pogo(Debug& debug_info) {
+  VLOG(VDEBUG) << "Parsing Debug POGO";
+
+  const uint32_t debug_size = debug_info.sizeof_data();
+  const uint32_t debug_off  = debug_info.pointerto_rawdata();
+  if (not this->stream_->can_read<uint32_t>(debug_off)) {
+    return;
+  }
+
+  const POGO_SIGNATURES signature = static_cast<POGO_SIGNATURES>(this->stream_->peek<uint32_t>(debug_off));
+
+  switch (signature) {
+    case POGO_SIGNATURES::POGO_LCTG:
+      {
+        std::unique_ptr<Pogo> pogo_object {new Pogo};
+        pogo_object->signature_ = signature;
+
+        uint32_t offset = sizeof(uint32_t);
+        while (offset + sizeof(pe_pogo) < debug_size)
+        {
+          const pe_pogo& pogo = this->stream_->peek<pe_pogo>(debug_off + offset);
+          std::string name = this->stream_->peek_string_at(debug_off + offset + offsetof(pe_pogo, name));
+
+          PogoEntry entry;
+
+          entry.start_rva_ = pogo.start_rva;
+          entry.size_      = pogo.size;
+          entry.name_      = name;
+
+          pogo_object->entries_.push_back(std::move(entry));
+
+          // pogo entries are 4-bytes aligned
+          offset += offsetof(pe_pogo, name) + name.length() + 1;
+          offset += ((4 - offset) % 4);
+        }
+
+        debug_info.pogo_ = pogo_object.release();
+        break;
+      }
+
+    default:
+      {
+        LOG(WARNING) << "PGO '" << to_string(signature) << "' is not implemented yet!";
+      }
+  }
+}
 
 //
 // Parse Export
@@ -713,7 +774,7 @@ void Parser::parse_exports(void) {
     } else {
       ExportEntry entry;
       entry.name_      = "";
-      entry.address_   = 0;
+      entry.address_   = value;
       entry.is_extern_ = false;
       entry.ordinal_   = i + export_directory_table.OrdinalBase;
       export_object.entries_.push_back(std::move(entry));
@@ -732,7 +793,6 @@ void Parser::parse_exports(void) {
 
     ExportEntry& entry = export_object.entries_[ordinal_table[i]];
     entry.name_        = name;
-    entry.address_     = address_table[ordinal_table[i]];
   }
 
   this->binary_->export_ = std::move(export_object);
@@ -802,6 +862,40 @@ std::unique_ptr<Binary> Parser::parse(const std::string& filename) {
 std::unique_ptr<Binary> Parser::parse(const std::vector<uint8_t>& data, const std::string& name) {
   Parser parser{data, name};
   return std::unique_ptr<Binary>{parser.binary_};
+}
+
+bool Parser::is_valid_import_name(const std::string& name) {
+
+  // According to https://stackoverflow.com/a/23340781
+  static constexpr unsigned MAX_IMPORT_NAME_SIZE = 0x1000;
+
+  if (name.empty() or name.size() > MAX_IMPORT_NAME_SIZE) {
+    return false;
+  }
+
+  if (not is_printable(name)) {
+    return false;
+  }
+  return true;
+}
+
+
+bool Parser::is_valid_dll_name(const std::string& name) {
+  //! @brief Minimum size for a DLL's name
+  static constexpr unsigned MIN_DLL_NAME_SIZE = 4;
+
+  // According to https://stackoverflow.com/a/265782/87207
+  static constexpr unsigned MAX_DLL_NAME_SIZE = 255;
+
+  if (name.size() < MIN_DLL_NAME_SIZE or name.size() > MAX_DLL_NAME_SIZE) {
+    return false;
+  }
+
+  if (not is_printable(name)) {
+    return false;
+  }
+
+  return true;
 }
 
 }

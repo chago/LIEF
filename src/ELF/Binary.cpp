@@ -544,8 +544,7 @@ const Symbol& Binary::get_static_symbol(const std::string& name) const {
 }
 
 
-Binary::string_list_t Binary::strings(void) const {
-  static constexpr size_t MIN_STRING_SIZE = 5;
+Binary::string_list_t Binary::strings(size_t min_size) const {
   Binary::string_list_t list;
   if (not this->has_section(".rodata")) {
     return list;
@@ -561,7 +560,7 @@ Binary::string_list_t Binary::strings(void) const {
 
     // Terminator
     if (c == '\0') {
-      if (current.size() >= MIN_STRING_SIZE) {
+      if (current.size() >= min_size) {
         list.push_back(std::move(current));
         continue;
       }
@@ -2562,10 +2561,49 @@ LIEF::Binary::functions_t Binary::functions(void) const {
       std::inserter(functions_set, std::end(functions_set)));
 
 
-
-
-
   return {std::begin(functions_set), std::end(functions_set)};
+}
+
+
+uint64_t Binary::eof_offset(void) const {
+  uint64_t last_offset_sections = 0;
+
+  for (Section* section : this->sections_) {
+    if (section->type() != LIEF::ELF::ELF_SECTION_TYPES::SHT_NOBITS) {
+      last_offset_sections = std::max<uint64_t>(section->file_offset() + section->size(), last_offset_sections);
+    }
+  }
+
+  const uint64_t section_header_size = this->type() == LIEF::ELF::ELF_CLASS::ELFCLASS64 ? sizeof(typename ELF64::Elf_Shdr) : sizeof(typename ELF32::Elf_Shdr);
+  const uint64_t segment_header_size = this->type() == LIEF::ELF::ELF_CLASS::ELFCLASS64 ? sizeof(typename ELF64::Elf_Phdr) : sizeof(typename ELF32::Elf_Phdr);
+
+  const uint64_t end_sht_table =
+      this->header().section_headers_offset() +
+      this->sections_.size() * section_header_size;
+
+  const uint64_t end_phdr_table =
+      this->header().program_headers_offset() +
+      this->segments_.size() * segment_header_size;
+
+  last_offset_sections = std::max<uint64_t>({last_offset_sections, end_sht_table, end_phdr_table});
+
+  const uint64_t last_offset_segments = this->last_offset_segment();
+  const uint64_t last_offset          = std::max<uint64_t>(last_offset_sections, last_offset_segments);
+
+  return last_offset;
+}
+
+
+bool Binary::has_overlay(void) const {
+  return this->overlay_.size() > 0;
+}
+
+const Binary::overlay_t& Binary::overlay(void) const {
+  return this->overlay_;
+}
+
+void Binary::overlay(Binary::overlay_t overlay) {
+  this->overlay_ = std::move(overlay);
 }
 
 
